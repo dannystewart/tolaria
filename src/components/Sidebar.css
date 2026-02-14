@@ -8,16 +8,17 @@
 }
 
 .sidebar__header {
-  padding: 16px;
+  padding: 20px 16px 16px;
   border-bottom: 1px solid #2a2a4a;
   flex-shrink: 0;
 }
 
 .sidebar__header h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.01em;
 }
 
 .sidebar__nav {
@@ -37,17 +38,21 @@
   padding: 6px 16px;
   cursor: pointer;
   font-size: 13px;
-  border-radius: 4px;
-  margin: 1px 4px;
+  border-radius: 6px;
+  margin: 1px 6px;
+  transition: all 0.12s;
+  color: #aaa;
 }
 
 .sidebar__filter-item:hover {
-  background: #2a2a4a;
+  background: #252545;
+  color: #ddd;
 }
 
 .sidebar__filter-item--active {
-  background: #2a2a4a;
-  color: #ffffff;
+  background: #4a9eff18;
+  color: #4a9eff;
+  font-weight: 500;
 }
 
 /* Section Groups */
@@ -132,20 +137,24 @@
   padding: 5px 16px 5px 28px;
   cursor: pointer;
   font-size: 13px;
-  border-radius: 4px;
-  margin: 1px 4px;
+  border-radius: 6px;
+  margin: 1px 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #bbb;
+  transition: all 0.12s;
 }
 
 .sidebar__item:hover {
-  background: #2a2a4a;
+  background: #252545;
+  color: #ddd;
 }
 
 .sidebar__item--active {
-  background: #2a2a4a;
-  color: #ffffff;
+  background: #4a9eff18;
+  color: #4a9eff;
+  font-weight: 500;
 }
 
 /* Topics */

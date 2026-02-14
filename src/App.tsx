@@ -263,7 +263,7 @@ function App() {
       </div>
       <ResizeHandle onResize={handleSidebarResize} />
       <div className="app__note-list" style={{ width: noteListWidth }}>
-        <NoteList entries={entries} selection={selection} selectedNote={activeTab?.entry ?? null} onSelectNote={handleSelectNote} onCreateNote={() => setShowCreateDialog(true)} />
+        <NoteList entries={entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={allContent} onSelectNote={handleSelectNote} onCreateNote={() => setShowCreateDialog(true)} />
       </div>
       <ResizeHandle onResize={handleNoteListResize} />
       <div className="app__editor">

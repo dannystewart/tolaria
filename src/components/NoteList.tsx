@@ -6,8 +6,37 @@ interface NoteListProps {
   entries: VaultEntry[]
   selection: SidebarSelection
   selectedNote: VaultEntry | null
+  allContent: Record<string, string>
   onSelectNote: (entry: VaultEntry) => void
   onCreateNote: () => void
+}
+
+/** Extract first ~80 chars of content after the title heading */
+function getSnippet(content: string | undefined): string {
+  if (!content) return ''
+  // Remove frontmatter
+  const withoutFm = content.replace(/^---[\s\S]*?---\s*/, '')
+  // Remove the first heading
+  const withoutH1 = withoutFm.replace(/^#\s+.*\n+/, '')
+  // Clean markdown syntax and collapse whitespace
+  const clean = withoutH1
+    .replace(/[#*_`\[\]]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+  return clean.slice(0, 80) + (clean.length > 80 ? '...' : '')
+}
+
+/** Format a relative date string */
+function relativeDate(ts: number | null): string {
+  if (!ts) return ''
+  const now = Math.floor(Date.now() / 1000)
+  const diff = now - ts
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
+  const date = new Date(ts * 1000)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 /** Check if a wikilink array (e.g. belongsTo) references a given entry by path stem */
@@ -69,7 +98,7 @@ const TYPE_PILLS = [
   { label: 'Responsibilities', type: 'Responsibility' },
 ] as const
 
-export function NoteList({ entries, selection, selectedNote, onSelectNote, onCreateNote }: NoteListProps) {
+export function NoteList({ entries, selection, selectedNote, allContent, onSelectNote, onCreateNote }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
 
@@ -138,9 +167,13 @@ export function NoteList({ entries, selection, selectedNote, onSelectNote, onCre
               }${selectedNote?.path === entry.path ? ' note-list__item--selected' : ''}`}
               onClick={() => onSelectNote(entry)}
             >
-              <div className="note-list__title">{entry.title}</div>
+              <div className="note-list__item-top">
+                <div className="note-list__title">{entry.title}</div>
+                <span className="note-list__date">{relativeDate(entry.modifiedAt)}</span>
+              </div>
+              <div className="note-list__snippet">{getSnippet(allContent[entry.path])}</div>
               <div className="note-list__meta">
-                {entry.isA && <span className="note-list__type">{entry.isA}</span>}
+                {entry.isA && <span className={`note-list__type note-list__type--${entry.isA.toLowerCase()}`}>{entry.isA}</span>}
                 {entry.status && <span className="note-list__status">{entry.status}</span>}
               </div>
             </div>
