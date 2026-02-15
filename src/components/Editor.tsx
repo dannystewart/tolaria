@@ -4,7 +4,6 @@ import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLi
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language'
-import { oneDark } from '@codemirror/theme-one-dark'
 import { livePreview } from './livePreview'
 import { frontmatterHide, findFrontmatter } from './frontmatterHide'
 import { wikilinks } from './wikilinks'
@@ -28,6 +27,8 @@ const editorTheme = EditorView.theme({
   '&': {
     height: '100%',
     fontSize: '15px',
+    backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-primary)',
   },
   '.cm-scroller': {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
@@ -37,31 +38,32 @@ const editorTheme = EditorView.theme({
   '.cm-content': {
     padding: '0 40px',
     maxWidth: '760px',
-    caretColor: '#e0e0e0',
+    caretColor: 'var(--text-primary)',
   },
   '.cm-line': {
-    padding: '1px 0',
+    paddingTop: '1px',
+    paddingBottom: '1px',
   },
   '.cm-gutters': {
-    background: '#0f0f1a',
+    background: 'var(--bg-primary)',
     border: 'none',
-    color: '#444',
+    color: 'var(--text-faint)',
   },
   '.cm-activeLineGutter': {
-    background: '#1a1a2e',
+    background: 'var(--bg-hover-subtle)',
   },
   '.cm-activeLine': {
-    background: 'rgba(255, 255, 255, 0.02)',
+    background: 'rgba(128, 128, 128, 0.06)',
   },
   '.cm-cursor': {
-    borderLeftColor: '#e0e0e0',
+    borderLeftColor: 'var(--text-primary)',
     borderLeftWidth: '1.5px',
   },
   '.cm-selectionBackground': {
-    background: '#2a2a5a !important',
+    background: 'var(--bg-selected) !important',
   },
   '&.cm-focused .cm-selectionBackground': {
-    background: '#2a2a5a !important',
+    background: 'var(--bg-selected) !important',
   },
 })
 
@@ -98,7 +100,6 @@ export function Editor({ tabs, activeTabPath, onSwitchTab, onCloseTab, onNavigat
         bracketMatching(),
         markdown(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        oneDark,
         editorTheme,
         livePreview(),
         frontmatterHide(),

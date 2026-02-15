@@ -281,7 +281,7 @@ const livePreviewTheme = EditorView.theme({
   // Headings — content text
   '.cm-live-heading': {
     fontWeight: '700',
-    color: '#e0e0e0',
+    color: 'var(--text-heading)',
   },
   '.cm-live-heading-1': { fontSize: '1.8em', lineHeight: '1.4' },
   '.cm-live-heading-2': { fontSize: '1.4em', lineHeight: '1.4' },
@@ -292,7 +292,7 @@ const livePreviewTheme = EditorView.theme({
 
   // Heading markers (#) — visible on active line, subtle color
   '.cm-live-heading-marker': {
-    color: '#555',
+    color: 'var(--text-faint)',
     fontWeight: '300',
   },
   '.cm-live-heading-marker-1': { fontSize: '1.8em', lineHeight: '1.4' },
@@ -306,14 +306,14 @@ const livePreviewTheme = EditorView.theme({
   '.cm-live-strong': { fontWeight: '700' },
   '.cm-live-em': { fontStyle: 'italic' },
   '.cm-live-link': {
-    color: '#4a9eff',
+    color: 'var(--accent-blue)',
     textDecoration: 'underline',
     cursor: 'pointer',
   },
   '.cm-live-code': {
     fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
     fontSize: '0.9em',
-    background: '#1e1e3a',
+    background: 'var(--bg-hover-subtle)',
     padding: '1px 4px',
     borderRadius: '3px',
   },
@@ -321,7 +321,7 @@ const livePreviewTheme = EditorView.theme({
   // Horizontal rule
   '.cm-live-hr': {
     border: 'none',
-    borderTop: '1px solid #3a3a5a',
+    borderTop: '1px solid var(--border-primary)',
     margin: '8px 0',
   },
 
@@ -329,7 +329,7 @@ const livePreviewTheme = EditorView.theme({
   '.cm-live-bullet': {
     display: 'inline-block',
     width: '20px',
-    color: '#888',
+    color: 'var(--text-tertiary)',
   },
 
   // Checkbox widget — fixed width matching bullet for consistent indent
@@ -345,7 +345,7 @@ const livePreviewTheme = EditorView.theme({
     justifyContent: 'center',
     width: '15px',
     height: '15px',
-    border: '1.5px solid #555',
+    border: '1.5px solid var(--text-faint)',
     borderRadius: '3px',
     background: 'transparent',
     cursor: 'pointer',
@@ -356,23 +356,23 @@ const livePreviewTheme = EditorView.theme({
     userSelect: 'none',
   },
   '.cm-live-checkbox:hover': {
-    borderColor: '#4a9eff',
+    borderColor: 'var(--accent-blue)',
   },
   '.cm-live-checkbox-checked': {
-    background: '#4a9eff',
-    borderColor: '#4a9eff',
+    background: 'var(--accent-blue)',
+    borderColor: 'var(--accent-blue)',
     color: '#fff',
   },
 
   // List indentation — hanging indent so wrapped lines align with text, not marker
   '.cm-live-list-bullet': { textIndent: '-20px' },
   '.cm-live-list-ordered': { textIndent: '-20px' },
-  '.cm-live-list-level-0': { paddingLeft: '40px' },
-  '.cm-live-list-level-1': { paddingLeft: '60px' },
-  '.cm-live-list-level-2': { paddingLeft: '80px' },
-  '.cm-live-list-level-3': { paddingLeft: '100px' },
-  '.cm-live-list-level-4': { paddingLeft: '120px' },
-  '.cm-live-list-level-5': { paddingLeft: '140px' },
+  '.cm-live-list-level-0': { paddingLeft: '40px !important' },
+  '.cm-live-list-level-1': { paddingLeft: '60px !important' },
+  '.cm-live-list-level-2': { paddingLeft: '80px !important' },
+  '.cm-live-list-level-3': { paddingLeft: '100px !important' },
+  '.cm-live-list-level-4': { paddingLeft: '120px !important' },
+  '.cm-live-list-level-5': { paddingLeft: '140px !important' },
 })
 
 export function livePreview(): Extension {
