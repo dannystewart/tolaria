@@ -4,6 +4,7 @@ import type { VaultEntry, SidebarSelection, ModifiedFile } from '../types'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
+import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 
 interface NoteListProps {
   entries: VaultEntry[]
@@ -207,17 +208,23 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, onSele
 
   const renderItem = useCallback((entry: VaultEntry, isPinned = false) => {
     const isSelected = selectedNote?.path === entry.path && !isPinned
+    const typeColor = getTypeColor(entry.isA)
+    const typeLightColor = getTypeLightColor(entry.isA)
     return (
       <div
         key={entry.path}
         className={cn(
           "cursor-pointer border-b border-[var(--border)] transition-colors",
           isPinned && "border-l-[3px] border-l-[var(--accent-green)] bg-muted",
-          isSelected && "border-l-[3px] border-l-[#155DFF] bg-[#155DFF12]",
+          isSelected && "border-l-[3px]",
           !isPinned && !isSelected && "hover:bg-muted"
         )}
         style={{
           padding: isPinned || isSelected ? '10px 16px 10px 13px' : '10px 16px',
+          ...(isSelected && {
+            borderLeftColor: typeColor,
+            backgroundColor: typeLightColor,
+          }),
         }}
         onClick={() => onSelectNote(entry)}
       >
