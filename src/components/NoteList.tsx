@@ -201,18 +201,20 @@ export function filterEntries(entries: VaultEntry[], selection: SidebarSelection
     case 'filter':
       switch (selection.filter) {
         case 'all':
-          return entries
+          return entries.filter((e) => !e.archived)
         case 'favorites':
           return []
+        case 'archived':
+          return entries.filter((e) => e.archived)
       }
       break
     case 'sectionGroup':
-      return entries.filter((e) => e.isA === selection.type)
+      return entries.filter((e) => e.isA === selection.type && !e.archived)
     case 'entity':
       return []
     case 'topic': {
       const topic = selection.entry
-      return entries.filter((e) => refsMatch(e.relatedTo, topic))
+      return entries.filter((e) => refsMatch(e.relatedTo, topic) && !e.archived)
     }
   }
 }
@@ -312,6 +314,14 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
             isSelected ? "font-semibold" : "font-medium"
           )}>
             {entry.title}
+            {entry.archived && (
+              <span
+                className="ml-1.5 inline-block align-middle text-muted-foreground"
+                style={{ fontSize: 9, fontWeight: 500, background: 'var(--muted)', borderRadius: 4, padding: '1px 4px', verticalAlign: 'middle' }}
+              >
+                ARCHIVED
+              </span>
+            )}
           </div>
         </div>
         <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -394,7 +404,13 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
       {/* Header */}
       <div className="flex h-[45px] shrink-0 items-center justify-between border-b border-border px-4" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <h3 className="m-0 min-w-0 flex-1 truncate text-[14px] font-semibold">
-          {isEntityView ? selection.entry.title : (typeDocument ? typeDocument.title : 'Notes')}
+          {isEntityView
+            ? selection.entry.title
+            : typeDocument
+              ? typeDocument.title
+              : selection.kind === 'filter' && (selection as { filter: string }).filter === 'archived'
+                ? 'Archive'
+                : 'Notes'}
         </h3>
         <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button

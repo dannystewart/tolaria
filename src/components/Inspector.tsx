@@ -62,17 +62,17 @@ function wikilinkTarget(ref: string): string {
   return pipeIdx !== -1 ? inner.slice(0, pipeIdx) : inner
 }
 
-function resolveRefType(ref: string, entries: VaultEntry[]): string | undefined {
+function resolveRef(ref: string, entries: VaultEntry[]): VaultEntry | undefined {
   const target = wikilinkTarget(ref)
-  const match = entries.find((e) => {
+  return entries.find((e) => {
     const stem = e.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
     if (stem === target) return true
     const fileStem = e.filename.replace(/\.md$/, '')
     if (fileStem === target.split('/').pop()) return true
     return false
   })
-  return match?.isA ?? undefined
 }
+
 
 function RelationshipGroup({ label, refs, entries, onNavigate }: { label: string; refs: string[]; entries: VaultEntry[]; onNavigate: (target: string) => void }) {
   if (refs.length === 0) return null
@@ -81,7 +81,9 @@ function RelationshipGroup({ label, refs, entries, onNavigate }: { label: string
       <span className="font-mono-overline mb-1 block text-muted-foreground">{label}</span>
       <div className="flex flex-col gap-1">
         {refs.map((ref, idx) => {
-          const refType = resolveRefType(ref, entries)
+          const resolved = resolveRef(ref, entries)
+          const refType = resolved?.isA ?? undefined
+          const isArchived = resolved?.archived ?? false
           const color = refType ? getTypeColor(refType) : 'var(--accent-blue)'
           const bgColor = refType ? getTypeLightColor(refType) : 'var(--accent-blue-light)'
           const TypeIcon = getTypeIcon(refType)
@@ -89,11 +91,20 @@ function RelationshipGroup({ label, refs, entries, onNavigate }: { label: string
             <button
               key={`${ref}-${idx}`}
               className="flex items-center justify-between gap-2 border-none text-left cursor-pointer hover:opacity-80"
-              style={{ background: bgColor, color, borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 500 }}
+              style={{
+                background: isArchived ? 'var(--muted)' : bgColor,
+                color: isArchived ? 'var(--muted-foreground)' : color,
+                borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 500,
+                opacity: isArchived ? 0.7 : 1,
+              }}
               onClick={() => onNavigate(wikilinkTarget(ref))}
+              title={isArchived ? 'Archived' : undefined}
             >
-              <span className="flex-1 truncate">{wikilinkDisplay(ref)}</span>
-              <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />
+              <span className="flex-1 truncate">
+                {wikilinkDisplay(ref)}
+                {isArchived && <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>(archived)</span>}
+              </span>
+              <TypeIcon width={14} height={14} className="shrink-0" style={{ color: isArchived ? 'var(--muted-foreground)' : color }} />
             </button>
           )
         })}
@@ -175,11 +186,15 @@ function BacklinksPanel({ backlinks, onNavigate }: { backlinks: VaultEntry[]; on
               <button
                 key={e.path}
                 className="flex items-center justify-between gap-2 border-none bg-transparent p-0 py-1 text-left text-[13px] cursor-pointer hover:opacity-80"
-                style={{ color }}
+                style={{ color: e.archived ? 'var(--muted-foreground)' : color, opacity: e.archived ? 0.7 : 1 }}
                 onClick={() => onNavigate(e.title)}
+                title={e.archived ? 'Archived' : undefined}
               >
-                <span className="flex-1 truncate">{e.title}</span>
-                {e.isA && <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />}
+                <span className="flex-1 truncate">
+                  {e.title}
+                  {e.archived && <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>(archived)</span>}
+                </span>
+                {e.isA && <TypeIcon width={14} height={14} className="shrink-0" style={{ color: e.archived ? 'var(--muted-foreground)' : color }} />}
               </button>
             )
           })}

@@ -16,6 +16,7 @@ import {
   TagSimple,
   Trash,
   StackSimple,
+  Archive,
   type IconProps,
 } from '@phosphor-icons/react'
 
@@ -88,8 +89,10 @@ export const Sidebar = memo(function Sidebar({ entries, selection, onSelect, onS
     [customSectionGroups],
   )
 
+  const archivedCount = useMemo(() => entries.filter((e) => e.archived).length, [entries])
+
   const renderSection = ({ label, type, Icon }: SectionGroup) => {
-    const items = entries.filter((e) => e.isA === type)
+    const items = entries.filter((e) => e.isA === type && !e.archived)
     const isCollapsed = collapsed[type] ?? false
     const isTopic = type === 'Topic'
     const isTypeSection = type === 'Type'
@@ -187,7 +190,7 @@ export const Sidebar = memo(function Sidebar({ entries, selection, onSelect, onS
         {/* Top nav — All Notes + Favorites */}
         <div className="border-b border-border" style={{ padding: '4px 6px' }}>
           {TOP_NAV.map(({ label, filter, Icon }) => {
-            const count = filter === 'all' ? entries.length : 0
+            const count = filter === 'all' ? entries.filter((e) => !e.archived).length : 0
             return (
               <div
                 key={filter}
@@ -213,6 +216,28 @@ export const Sidebar = memo(function Sidebar({ entries, selection, onSelect, onS
               </div>
             )
           })}
+          {/* Archive filter */}
+          <div
+            className={cn(
+              "flex cursor-pointer select-none items-center gap-2 rounded transition-colors",
+              isActive({ kind: 'filter', filter: 'archived' })
+                ? "bg-primary/10 text-primary"
+                : "text-foreground hover:bg-accent"
+            )}
+            style={{ padding: '6px 16px', borderRadius: 4 }}
+            onClick={() => onSelect({ kind: 'filter', filter: 'archived' })}
+          >
+            <Archive size={16} />
+            <span className="flex-1 text-[13px] font-medium">Archive</span>
+            {archivedCount > 0 && (
+              <span
+                className="flex items-center justify-center text-muted-foreground"
+                style={{ height: 20, borderRadius: 9999, padding: '0 6px', fontSize: 10, background: 'var(--muted)' }}
+              >
+                {archivedCount}
+              </span>
+            )}
+          </div>
           {/* Disabled placeholders */}
           <div
             className="flex select-none items-center gap-2 rounded text-foreground"
