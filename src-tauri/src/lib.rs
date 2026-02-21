@@ -51,6 +51,11 @@ fn git_push(vault_path: String) -> Result<String, String> {
     git::git_push(&vault_path)
 }
 
+#[tauri::command]
+fn save_image(vault_path: String, filename: String, data: String) -> Result<String, String> {
+    vault::save_image(&vault_path, &filename, &data)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -73,7 +78,8 @@ pub fn run() {
             get_modified_files,
             get_file_diff,
             git_commit,
-            git_push
+            git_push,
+            save_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

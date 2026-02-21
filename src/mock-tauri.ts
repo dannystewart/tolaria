@@ -1109,6 +1109,10 @@ const mockHandlers: Record<string, (args: any) => any> = {
   git_push: () => {
     return 'Everything up-to-date'
   },
+  save_image: (args: { filename: string; data: string }) => {
+    // In mock mode, return a data URL so the image displays in the editor
+    return `data:image/png;base64,${args.data}`
+  },
 }
 
 export function isTauri(): boolean {
