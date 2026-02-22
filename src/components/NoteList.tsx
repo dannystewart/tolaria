@@ -114,61 +114,119 @@ function useTypeEntryMap(entries: VaultEntry[]) {
   }, [entries])
 }
 
-function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, onSelectNote, onCreateNote }: NoteListProps) {
-  const [search, setSearch] = useState('')
-  const [searchVisible, setSearchVisible] = useState(false)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [sortPrefs, setSortPrefs] = useState<Record<string, SortOption>>(loadSortPreferences)
+// --- View sub-components ---
 
+function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggleGroup, onSortChange, renderItem, typeEntryMap, onSelectNote }: {
+  entity: VaultEntry; groups: RelationshipGroup[]; query: string
+  collapsedGroups: Set<string>; sortPrefs: Record<string, SortOption>
+  onToggleGroup: (label: string) => void; onSortChange: (label: string, opt: SortOption) => void
+  renderItem: (entry: VaultEntry) => React.ReactNode
+  typeEntryMap: Record<string, VaultEntry>; onSelectNote: (entry: VaultEntry) => void
+}) {
+  return (
+    <div className="h-full overflow-y-auto">
+      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} showDate />
+      {groups.length === 0
+        ? <EmptyMessage text={query ? 'No matching items' : 'No related items'} />
+        : groups.map((group) => (
+          <RelationshipGroupSection key={group.label} group={group} isCollapsed={collapsedGroups.has(group.label)} sortPrefs={sortPrefs} onToggle={() => onToggleGroup(group.label)} handleSortChange={onSortChange} renderItem={renderItem} />
+        ))
+      }
+    </div>
+  )
+}
+
+function ListView({ typeDocument, isTrashView, expiredTrashCount, searched, query, renderItem, typeEntryMap, onSelectNote }: {
+  typeDocument: VaultEntry | null; isTrashView: boolean; expiredTrashCount: number
+  searched: VaultEntry[]; query: string
+  renderItem: (entry: VaultEntry) => React.ReactNode
+  typeEntryMap: Record<string, VaultEntry>; onSelectNote: (entry: VaultEntry) => void
+}) {
+  const emptyText = isTrashView ? 'Trash is empty' : (query ? 'No matching notes' : 'No notes found')
+  return (
+    <div className="h-full overflow-y-auto">
+      {typeDocument && <PinnedCard entry={typeDocument} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />}
+      <TrashWarningBanner expiredCount={isTrashView ? expiredTrashCount : 0} />
+      {searched.length === 0
+        ? <EmptyMessage text={emptyText} />
+        : searched.map((entry) => renderItem(entry))
+      }
+    </div>
+  )
+}
+
+// --- Pure helpers ---
+
+function filterByQuery<T extends { title: string }>(items: T[], query: string): T[] {
+  return query ? items.filter((e) => e.title.toLowerCase().includes(query)) : items
+}
+
+function filterGroupsByQuery(groups: RelationshipGroup[], query: string): RelationshipGroup[] {
+  if (!query) return groups
+  return groups.map((g) => ({ ...g, entries: filterByQuery(g.entries, query) })).filter((g) => g.entries.length > 0)
+}
+
+function countExpiredTrash(entries: VaultEntry[]): number {
+  const now = Date.now() / 1000
+  return entries.filter((e) => e.trashedAt && (now - e.trashedAt) >= 86400 * 30).length
+}
+
+// --- Data hooks ---
+
+interface NoteListDataParams {
+  entries: VaultEntry[]; selection: SidebarSelection; allContent: Record<string, string>
+  query: string; listSort: SortOption; modifiedFiles?: ModifiedFile[]
+}
+
+function useNoteListData({ entries, selection, allContent, query, listSort, modifiedFiles }: NoteListDataParams) {
   const isEntityView = selection.kind === 'entity'
   const isTrashView = selection.kind === 'filter' && selection.filter === 'trash'
-
-  const handleSortChange = useCallback((groupLabel: string, option: SortOption) => {
-    setSortPrefs((prev) => {
-      const next = { ...prev, [groupLabel]: option }
-      saveSortPreferences(next)
-      return next
-    })
-  }, [])
-
-  const toggleGroup = useCallback((label: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(label)) next.delete(label)
-      else next.add(label)
-      return next
-    })
-  }, [])
-
-  const typeEntryMap = useTypeEntryMap(entries)
 
   const typeDocument = useMemo(() => {
     if (selection.kind !== 'sectionGroup') return null
     return entries.find((e) => e.isA === 'Type' && e.title === selection.type) ?? null
   }, [selection, entries])
 
-  const query = search.trim().toLowerCase()
-  const listSort = sortPrefs['__list__'] ?? 'modified'
-
   const searched = useMemo(() => {
     if (isEntityView) return []
-    const filtered = filterEntries(entries, selection, modifiedFiles)
-    const sorted = [...filtered].sort(getSortComparator(listSort))
-    return query ? sorted.filter((e) => e.title.toLowerCase().includes(query)) : sorted
+    const sorted = [...filterEntries(entries, selection, modifiedFiles)].sort(getSortComparator(listSort))
+    return filterByQuery(sorted, query)
   }, [entries, selection, modifiedFiles, isEntityView, listSort, query])
 
   const searchedGroups = useMemo(() => {
     if (!isEntityView) return []
     const groups = buildRelationshipGroups(selection.entry, entries, allContent)
-    if (!query) return groups
-    return groups.map((g) => ({ ...g, entries: g.entries.filter((e) => e.title.toLowerCase().includes(query)) })).filter((g) => g.entries.length > 0)
+    return filterGroupsByQuery(groups, query)
   }, [isEntityView, selection, entries, allContent, query])
 
-  const expiredTrashCount = useMemo(() => {
-    if (!isTrashView) return 0
-    const now = Date.now() / 1000
-    return searched.filter((e) => e.trashedAt && (now - e.trashedAt) >= 86400 * 30).length
-  }, [isTrashView, searched])
+  const expiredTrashCount = useMemo(
+    () => isTrashView ? countExpiredTrash(searched) : 0,
+    [isTrashView, searched],
+  )
+
+  return { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount }
+}
+
+// --- Main component ---
+
+function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, onSelectNote, onCreateNote }: NoteListProps) {
+  const [search, setSearch] = useState('')
+  const [searchVisible, setSearchVisible] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [sortPrefs, setSortPrefs] = useState<Record<string, SortOption>>(loadSortPreferences)
+
+  const handleSortChange = useCallback((groupLabel: string, option: SortOption) => {
+    setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: option }; saveSortPreferences(next); return next })
+  }, [])
+
+  const toggleGroup = useCallback((label: string) => {
+    setCollapsedGroups((prev) => { const next = new Set(prev); next.has(label) ? next.delete(label) : next.add(label); return next })
+  }, [])
+
+  const typeEntryMap = useTypeEntryMap(entries)
+  const query = search.trim().toLowerCase()
+  const listSort = sortPrefs['__list__'] ?? 'modified'
+  const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, modifiedFiles })
 
   const renderItem = useCallback((entry: VaultEntry) => (
     <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
@@ -197,24 +255,9 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
 
       <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
         {isEntityView ? (
-          <div className="h-full overflow-y-auto">
-            <PinnedCard entry={selection.entry} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} showDate />
-            {searchedGroups.length === 0
-              ? <EmptyMessage text={query ? 'No matching items' : 'No related items'} />
-              : searchedGroups.map((group) => (
-                <RelationshipGroupSection key={group.label} group={group} isCollapsed={collapsedGroups.has(group.label)} sortPrefs={sortPrefs} onToggle={() => toggleGroup(group.label)} handleSortChange={handleSortChange} renderItem={renderItem} />
-              ))
-            }
-          </div>
+          <EntityView entity={selection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
         ) : (
-          <div className="h-full overflow-y-auto">
-            {typeDocument && <PinnedCard entry={typeDocument} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />}
-            <TrashWarningBanner expiredCount={isTrashView ? expiredTrashCount : 0} />
-            {searched.length === 0
-              ? <EmptyMessage text={isTrashView ? 'Trash is empty' : 'No notes found'} />
-              : searched.map((entry) => renderItem(entry))
-            }
-          </div>
+          <ListView typeDocument={typeDocument} isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
         )}
       </div>
     </div>

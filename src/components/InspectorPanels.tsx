@@ -47,6 +47,12 @@ function resolveRef(ref: string, entries: VaultEntry[]): VaultEntry | undefined 
   })
 }
 
+function StatusSuffix({ isArchived, isTrashed }: { isArchived: boolean; isTrashed: boolean }) {
+  if (isTrashed) return <span style={{ fontSize: 10, opacity: 0.8 }}>(trashed)</span>
+  if (isArchived) return <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>(archived)</span>
+  return null
+}
+
 function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, onClick, title, TypeIcon }: {
   label: string
   typeColor: string
@@ -73,12 +79,17 @@ function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, onClick,
       <span className="flex items-center gap-1 flex-1 truncate">
         {isTrashed && <Trash size={12} className="shrink-0" />}
         {label}
-        {isTrashed && <span style={{ fontSize: 10, opacity: 0.8 }}>(trashed)</span>}
-        {isArchived && !isTrashed && <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>(archived)</span>}
+        <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
       </span>
       <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />
     </button>
   )
+}
+
+function entryStatusTitle(entry: VaultEntry | undefined): string | undefined {
+  if (entry?.trashed) return 'Trashed'
+  if (entry?.archived) return 'Archived'
+  return undefined
 }
 
 function resolveRefProps(ref: string, entries: VaultEntry[]) {
@@ -91,7 +102,7 @@ function resolveRefProps(ref: string, entries: VaultEntry[]) {
     isArchived: resolved?.archived ?? false,
     isTrashed: resolved?.trashed ?? false,
     target: wikilinkTarget(ref),
-    title: resolved?.trashed ? 'Trashed' : resolved?.archived ? 'Archived' : undefined,
+    title: entryStatusTitle(resolved),
     TypeIcon: getTypeIcon(refType),
   }
 }

@@ -70,22 +70,22 @@ const TYPE_COLOR_MAP: Record<string, string> = {
   purple: 'var(--accent-purple)',
 }
 
+function findEntryByTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
+  return entries.find(e => e.title === target || e.filename.replace(/\.md$/, '') === target)
+}
+
+function lookupColorForEntry(entries: VaultEntry[], entry: VaultEntry): string | undefined {
+  if (entry.isA === 'Type' && entry.color) return TYPE_COLOR_MAP[entry.color]
+  if (!entry.isA) return undefined
+  const typeEntry = entries.find(e => e.isA === 'Type' && e.title === entry.isA)
+  return typeEntry?.color ? TYPE_COLOR_MAP[typeEntry.color] : undefined
+}
+
 function resolveWikilinkColor(target: string): string | undefined {
   const entries = _wikilinkEntriesRef.current
   if (!entries.length) return undefined
-  // Find the target entry by title or filename slug
-  const entry = entries.find(
-    e => e.title === target || e.filename.replace(/\.md$/, '') === target
-  )
-  if (!entry) return undefined
-  // If entry is itself a Type, use its own color
-  if (entry.isA === 'Type' && entry.color) return TYPE_COLOR_MAP[entry.color]
-  // Otherwise look up the type entry
-  if (entry.isA) {
-    const typeEntry = entries.find(e => e.isA === 'Type' && e.title === entry.isA)
-    if (typeEntry?.color) return TYPE_COLOR_MAP[typeEntry.color]
-  }
-  return undefined
+  const entry = findEntryByTarget(entries, target)
+  return entry ? lookupColorForEntry(entries, entry) : undefined
 }
 
 const WikiLink = createReactInlineContentSpec(

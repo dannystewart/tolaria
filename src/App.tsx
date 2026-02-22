@@ -12,6 +12,7 @@ import { StatusBar } from './components/StatusBar'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useNoteActions } from './hooks/useNoteActions'
 import { useAppKeyboard } from './hooks/useAppKeyboard'
+import { useEntryActions } from './hooks/useEntryActions'
 import { isTauri } from './mock-tauri'
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
 import type { SidebarSelection, GitCommit } from './types'
@@ -26,8 +27,6 @@ declare global {
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
 
-// In web/browser mode: only Demo v2 (no real vault access)
-// In native Tauri mode: Demo v2 + real Laputa vault
 const VAULTS = isTauri()
   ? [
       { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
@@ -43,12 +42,20 @@ const BUILT_IN_TYPE_NAMES = new Set([
   'Quarter', 'Journal', 'Evergreen',
 ])
 
-function App() {
-  const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
+function useLayoutPanels() {
   const [sidebarWidth, setSidebarWidth] = useState(250)
   const [noteListWidth, setNoteListWidth] = useState(300)
   const [inspectorWidth, setInspectorWidth] = useState(280)
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
+  const handleSidebarResize = useCallback((delta: number) => setSidebarWidth((w) => Math.max(150, Math.min(400, w + delta))), [])
+  const handleNoteListResize = useCallback((delta: number) => setNoteListWidth((w) => Math.max(200, Math.min(500, w + delta))), [])
+  const handleInspectorResize = useCallback((delta: number) => setInspectorWidth((w) => Math.max(200, Math.min(500, w - delta))), [])
+  return { sidebarWidth, noteListWidth, inspectorWidth, inspectorCollapsed, setInspectorCollapsed, handleSidebarResize, handleNoteListResize, handleInspectorResize }
+}
+
+function App() {
+  const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
+  const layout = useLayoutPanels()
   const [gitHistory, setGitHistory] = useState<GitCommit[]>([])
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [createNoteDefaultType, setCreateNoteDefaultType] = useState<string | undefined>()
@@ -62,7 +69,14 @@ function App() {
   const vault = useVaultLoader(vaultPath)
   const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage)
 
-  // Derive custom types from vault (Type entries not in built-in list)
+  const entryActions = useEntryActions({
+    entries: vault.entries,
+    updateEntry: vault.updateEntry,
+    handleUpdateFrontmatter: notes.handleUpdateFrontmatter,
+    handleDeleteProperty: notes.handleDeleteProperty,
+    setToastMessage,
+  })
+
   const customTypes = useMemo(
     () => vault.entries
       .filter((e) => e.isA === 'Type' && !BUILT_IN_TYPE_NAMES.has(e.title))
@@ -71,7 +85,6 @@ function App() {
     [vault.entries],
   )
 
-  // Reset UI state when vault changes
   const handleSwitchVault = useCallback((path: string) => {
     setVaultPath(path)
     setSelection(DEFAULT_SELECTION)
@@ -79,12 +92,8 @@ function App() {
     notes.closeAllTabs()
   }, [notes])
 
-  // Load git history when active tab changes
   useEffect(() => {
-    if (!notes.activeTabPath) {
-      setGitHistory([])
-      return
-    }
+    if (!notes.activeTabPath) { setGitHistory([]); return }
     vault.loadGitHistory(notes.activeTabPath).then(setGitHistory)
   }, [notes.activeTabPath, vault.loadGitHistory])
 
@@ -93,67 +102,17 @@ function App() {
     setShowCreateDialog(true)
   }, [])
 
-  const openCreateTypeDialog = useCallback(() => {
-    setShowCreateTypeDialog(true)
-  }, [])
-
   const handleCreateType = useCallback((name: string) => {
     notes.handleCreateType(name)
     setToastMessage(`Type "${name}" created`)
-  }, [notes, setToastMessage])
-
-  const handleCustomizeType = useCallback((typeName: string, icon: string, color: string) => {
-    const typeEntry = vault.entries.find((e) => e.isA === 'Type' && e.title === typeName)
-    if (!typeEntry) return
-    // Update icon and color in frontmatter (two separate calls)
-    notes.handleUpdateFrontmatter(typeEntry.path, 'icon', icon)
-    notes.handleUpdateFrontmatter(typeEntry.path, 'color', color)
-    // Also update the entry in-memory for instant UI feedback
-    vault.updateEntry(typeEntry.path, { icon, color })
-  }, [vault, notes])
-
-  const handleTrashNote = useCallback(async (path: string) => {
-    const now = new Date().toISOString().slice(0, 10)
-    await notes.handleUpdateFrontmatter(path, 'trashed', true)
-    await notes.handleUpdateFrontmatter(path, 'trashed_at', now)
-    vault.updateEntry(path, { trashed: true, trashedAt: Date.now() / 1000 })
-    setToastMessage('Note moved to trash')
-  }, [notes, vault, setToastMessage])
-
-  const handleRestoreNote = useCallback(async (path: string) => {
-    await notes.handleUpdateFrontmatter(path, 'trashed', false)
-    await notes.handleDeleteProperty(path, 'trashed_at')
-    vault.updateEntry(path, { trashed: false, trashedAt: null })
-    setToastMessage('Note restored from trash')
-  }, [notes, vault, setToastMessage])
-
-  const handleArchiveNote = useCallback(async (path: string) => {
-    await notes.handleUpdateFrontmatter(path, 'archived', true)
-    vault.updateEntry(path, { archived: true })
-    setToastMessage('Note archived')
-  }, [notes, vault, setToastMessage])
-
-  const handleUnarchiveNote = useCallback(async (path: string) => {
-    await notes.handleUpdateFrontmatter(path, 'archived', false)
-    vault.updateEntry(path, { archived: false })
-    setToastMessage('Note unarchived')
-  }, [notes, vault, setToastMessage])
-
-  const handleReorderSections = useCallback((orderedTypes: { typeName: string; order: number }[]) => {
-    for (const { typeName, order } of orderedTypes) {
-      const typeEntry = vault.entries.find((e) => e.isA === 'Type' && e.title === typeName)
-      if (!typeEntry) continue
-      notes.handleUpdateFrontmatter(typeEntry.path, 'order', order)
-      vault.updateEntry(typeEntry.path, { order })
-    }
-  }, [vault, notes])
+  }, [notes])
 
   useAppKeyboard({
     onQuickOpen: () => setShowQuickOpen(true),
     onCreateNote: openCreateDialog,
     onSave: () => setToastMessage('Saved'),
-    onTrashNote: handleTrashNote,
-    onArchiveNote: handleArchiveNote,
+    onTrashNote: entryActions.handleTrashNote,
+    onArchiveNote: entryActions.handleArchiveNote,
     activeTabPathRef: notes.activeTabPathRef,
     handleCloseTabRef: notes.handleCloseTabRef,
   })
@@ -168,18 +127,6 @@ function App() {
     onReplaceActiveTab: notes.handleReplaceActiveTab,
     onSelectNote: notes.handleSelectNote,
   })
-
-  const handleSidebarResize = useCallback((delta: number) => {
-    setSidebarWidth((w) => Math.max(150, Math.min(400, w + delta)))
-  }, [])
-
-  const handleNoteListResize = useCallback((delta: number) => {
-    setNoteListWidth((w) => Math.max(200, Math.min(500, w + delta)))
-  }, [])
-
-  const handleInspectorResize = useCallback((delta: number) => {
-    setInspectorWidth((w) => Math.max(200, Math.min(500, w - delta)))
-  }, [])
 
   const handleCommitPush = useCallback(async (message: string) => {
     setShowCommitDialog(false)
@@ -198,14 +145,14 @@ function App() {
   return (
     <div className="app-shell">
       <div className="app">
-        <div className="app__sidebar" style={{ width: sidebarWidth }}>
-          <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={openCreateDialog} onCreateNewType={openCreateTypeDialog} onCustomizeType={handleCustomizeType} onReorderSections={handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={() => setShowCommitDialog(true)} />
+        <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
+          <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={openCreateDialog} onCreateNewType={() => setShowCreateTypeDialog(true)} onCustomizeType={entryActions.handleCustomizeType} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={() => setShowCommitDialog(true)} />
         </div>
-        <ResizeHandle onResize={handleSidebarResize} />
-        <div className="app__note-list" style={{ width: noteListWidth }}>
+        <ResizeHandle onResize={layout.handleSidebarResize} />
+        <div className="app__note-list" style={{ width: layout.noteListWidth }}>
           <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} onSelectNote={notes.handleSelectNote} onCreateNote={openCreateDialog} />
         </div>
-        <ResizeHandle onResize={handleNoteListResize} />
+        <ResizeHandle onResize={layout.handleNoteListResize} />
         <div className="app__editor">
           <Editor
             tabs={notes.tabs}
@@ -219,10 +166,10 @@ function App() {
             onLoadDiffAtCommit={vault.loadDiffAtCommit}
             isModified={vault.isFileModified}
             onCreateNote={openCreateDialog}
-            inspectorCollapsed={inspectorCollapsed}
-            onToggleInspector={() => setInspectorCollapsed((c) => !c)}
-            inspectorWidth={inspectorWidth}
-            onInspectorResize={handleInspectorResize}
+            inspectorCollapsed={layout.inspectorCollapsed}
+            onToggleInspector={() => layout.setInspectorCollapsed((c) => !c)}
+            inspectorWidth={layout.inspectorWidth}
+            onInspectorResize={layout.handleInspectorResize}
             inspectorEntry={activeTab?.entry ?? null}
             inspectorContent={activeTab?.content ?? null}
             allContent={vault.allContent}
@@ -233,39 +180,19 @@ function App() {
             showAIChat={showAIChat}
             onToggleAIChat={() => setShowAIChat(c => !c)}
             vaultPath={vaultPath}
-            onTrashNote={handleTrashNote}
-            onRestoreNote={handleRestoreNote}
-            onArchiveNote={handleArchiveNote}
-            onUnarchiveNote={handleUnarchiveNote}
+            onTrashNote={entryActions.handleTrashNote}
+            onRestoreNote={entryActions.handleRestoreNote}
+            onArchiveNote={entryActions.handleArchiveNote}
+            onUnarchiveNote={entryActions.handleUnarchiveNote}
           />
         </div>
       </div>
       <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={VAULTS} onSwitchVault={handleSwitchVault} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
-      <QuickOpenPalette
-        open={showQuickOpen}
-        entries={vault.entries}
-        onSelect={notes.handleSelectNote}
-        onClose={() => setShowQuickOpen(false)}
-      />
-      <CreateNoteDialog
-        open={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onCreate={notes.handleCreateNote}
-        defaultType={createNoteDefaultType}
-        customTypes={customTypes}
-      />
-      <CreateTypeDialog
-        open={showCreateTypeDialog}
-        onClose={() => setShowCreateTypeDialog(false)}
-        onCreate={handleCreateType}
-      />
-      <CommitDialog
-        open={showCommitDialog}
-        modifiedCount={vault.modifiedFiles.length}
-        onCommit={handleCommitPush}
-        onClose={() => setShowCommitDialog(false)}
-      />
+      <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
+      <CreateNoteDialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)} onCreate={notes.handleCreateNote} defaultType={createNoteDefaultType} customTypes={customTypes} />
+      <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />
+      <CommitDialog open={showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={handleCommitPush} onClose={() => setShowCommitDialog(false)} />
     </div>
   )
 }
