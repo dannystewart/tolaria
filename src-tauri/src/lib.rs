@@ -91,11 +91,30 @@ fn setup_desktop_plugins(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         .plugin(tauri_plugin_updater::Builder::new().build())?;
     app.handle().plugin(tauri_plugin_process::init())?;
     app.handle().plugin(tauri_plugin_opener::init())?;
+    #[cfg(not(target_os = "linux"))]
     menu::setup_menu(app)?;
+    setup_linux_window_chrome(app)?;
     Ok(())
 }
 
+#[cfg(all(desktop, target_os = "linux"))]
+fn setup_linux_window_chrome(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::Manager;
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_decorations(false);
+    }
+    Ok(())
+}
+
+#[cfg(not(all(desktop, target_os = "linux")))]
+fn setup_linux_window_chrome(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
+#[cfg(any(test, all(desktop, target_os = "macos")))]
 const MACOS_WEBVIEW_RESERVED_COMMAND_KEYS: &[&str] = &["O"];
+#[cfg(any(test, all(desktop, target_os = "macos")))]
 const MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS: &[&str] = &["L"];
 
 #[cfg(all(desktop, target_os = "macos"))]
