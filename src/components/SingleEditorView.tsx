@@ -10,6 +10,7 @@ import {
 import { components } from '@blocknote/mantine'
 import { MantineContext, MantineProvider } from '@mantine/core'
 import { useEditorTheme } from '../hooks/useTheme'
+import { useTheme } from '../hooks/useThemeProvider'
 import { useImageDrop } from '../hooks/useImageDrop'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { preFilterWikilinks, deduplicateByPath, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
@@ -322,6 +323,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   editable?: boolean
 }) {
   const { cssVars } = useEditorTheme()
+  const { resolvedTheme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const handleContainerClick = useEditorContainerClickHandler({ editable, editor })
   const handleEditorChange = useCompositionAwareEditorChange({ containerRef, onChange })
@@ -360,7 +362,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
       )}
       <SharedContextBlockNoteView
         editor={editor}
-        theme="light"
+        theme={resolvedTheme}
         onChange={handleEditorChange}
         editable={editable}
         formattingToolbar={false}

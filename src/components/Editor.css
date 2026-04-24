@@ -80,7 +80,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(21, 93, 255, 0.06);
+  background: var(--accent-blue-light);
   pointer-events: none;
 }
 
@@ -91,7 +91,7 @@
   color: var(--primary, #155DFF);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-dialog);
 }
 
 .editor__blocknote-container .bn-container {

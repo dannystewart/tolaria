@@ -31,6 +31,7 @@ import { useAutoGit } from './hooks/useAutoGit'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useAiAgentPreferences } from './hooks/useAiAgentPreferences'
 import { useSettings } from './hooks/useSettings'
+import { useThemeManager, ThemeContext, type ThemePreference } from './hooks/useThemeProvider'
 import { useNoteActions } from './hooks/useNoteActions'
 import { planNewTypeCreation } from './hooks/useNoteCreation'
 import { useCommitFlow } from './hooks/useCommitFlow'
@@ -367,6 +368,11 @@ function App() {
     })
   }, [updateConfig, vaultConfig.inbox?.noteListProperties])
   const { settings, loaded: settingsLoaded, saveSettings } = useSettings()
+  const themeManager = useThemeManager(
+    settings.theme,
+    settingsLoaded,
+    (t: ThemePreference) => saveSettings({ ...settings, theme: t }),
+  )
   const aiAgentPreferences = useAiAgentPreferences({
     settings,
     saveSettings,
@@ -1407,6 +1413,7 @@ function App() {
   }
 
   return (
+    <ThemeContext.Provider value={themeManager}>
     <NoteRetargetingProvider value={noteRetargetingUi.contextValue}>
       <div className="app-shell">
         <div className="app">
@@ -1559,6 +1566,7 @@ function App() {
         )}
       </div>
     </NoteRetargetingProvider>
+    </ThemeContext.Provider>
   )
 }
 

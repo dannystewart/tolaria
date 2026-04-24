@@ -15,6 +15,7 @@ const defaultSettings: Settings = {
   anonymous_id: null,
   release_channel: null,
   default_ai_agent: null,
+  theme: null,
 }
 
 const savedSettings: Settings = {
@@ -29,6 +30,7 @@ const savedSettings: Settings = {
   anonymous_id: null,
   release_channel: null,
   default_ai_agent: null,
+  theme: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }
@@ -112,6 +114,7 @@ describe('useSettings', () => {
       anonymous_id: null,
       release_channel: null,
       default_ai_agent: null,
+      theme: null,
     }
 
     await act(async () => {

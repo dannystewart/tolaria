@@ -91,6 +91,7 @@ export interface Settings {
   release_channel: string | null
   initial_h1_auto_rename_enabled?: boolean | null
   default_ai_agent?: AiAgentId | null
+  theme?: string | null
 }
 
 export interface GitPullResult {

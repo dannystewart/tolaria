@@ -16,15 +16,15 @@ const bannerStyle = {
   alignItems: 'center',
   gap: 10,
   padding: '6px 12px',
-  background: '#1a56db',
+  background: 'var(--primary)',
   borderBottom: 'none',
   fontSize: 13,
-  color: '#fff',
+  color: 'var(--primary-foreground)',
   flexShrink: 0,
 } satisfies CSSProperties
 
 const iconStyle = {
-  color: '#fff',
+  color: 'var(--primary-foreground)',
   flexShrink: 0,
 } satisfies CSSProperties
 
@@ -32,13 +32,13 @@ const primaryActionStyle = {
   marginLeft: 'auto',
   padding: '3px 10px',
   background: 'var(--primary)',
-  color: '#fff',
+  color: 'var(--primary-foreground)',
   fontSize: 12,
   fontWeight: 500,
 } satisfies CSSProperties
 
 const dismissButtonStyle = {
-  color: '#fff',
+  color: 'var(--primary-foreground)',
   display: 'flex',
   padding: 2,
 } satisfies CSSProperties
@@ -75,7 +75,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
         size="xs"
         data-testid="update-release-notes"
         onClick={actions.openReleaseNotes}
-        style={{ color: '#fff', padding: 0, height: 'auto' }}
+        style={{ color: 'var(--primary-foreground)', padding: 0, height: 'auto' }}
       >
         Release Notes <ExternalLink size={11} />
       </Button>

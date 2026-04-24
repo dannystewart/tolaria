@@ -116,7 +116,9 @@ export function getEffectiveDisplayMode(
 function resolveDateFromValue(value: string): Date | null {
   const isoMatch = value.match(ISO_DATE_RE)
   if (isoMatch) {
-    const date = new Date(isoMatch[0])
+    const datePart = isoMatch[0].slice(0, 10)
+    const [y, m, d] = datePart.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
     return Number.isNaN(date.getTime()) ? null : date
   }
 
@@ -137,8 +139,15 @@ export function formatDateValue(value: string): string {
 export function toISODate(value: string): string {
   const isoMatch = value.match(ISO_DATE_RE)
   if (isoMatch) {
-    const d = new Date(isoMatch[0])
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
+    const datePart = isoMatch[0].slice(0, 10)
+    const [y, m, day] = datePart.split('-').map(Number)
+    const d = new Date(y, m - 1, day)
+    if (!isNaN(d.getTime())) {
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    }
   }
   return value
 }

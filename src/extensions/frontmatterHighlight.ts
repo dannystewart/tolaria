@@ -73,12 +73,9 @@ export const frontmatterHighlightPlugin = ViewPlugin.fromClass(
 )
 
 export function frontmatterHighlightTheme() {
-  const keyColor = '#c9383e'
-  const valueColor = '#2a7e4f'
-  const delimiterColor = '#c9383e'
   return EditorView.baseTheme({
-    '.cm-frontmatter-delimiter': { color: delimiterColor, fontWeight: '600' },
-    '.cm-frontmatter-key': { color: keyColor },
-    '.cm-frontmatter-value': { color: valueColor },
+    '.cm-frontmatter-delimiter': { color: 'var(--cm-frontmatter-delimiter)', fontWeight: '600' },
+    '.cm-frontmatter-key': { color: 'var(--cm-frontmatter-key)' },
+    '.cm-frontmatter-value': { color: 'var(--cm-frontmatter-value)' },
   })
 }

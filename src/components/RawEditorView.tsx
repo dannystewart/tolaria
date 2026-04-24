@@ -167,7 +167,7 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
       {yamlError && (
         <div
           className="flex items-center gap-2 px-4 py-2 text-xs border-b shrink-0"
-          style={{ background: '#fef3c7', borderColor: '#d97706', color: '#92400e' }}
+          style={{ background: 'var(--alert-warning-bg)', borderColor: 'var(--alert-warning-border)', color: 'var(--alert-warning-text)' }}
           role="alert"
           data-testid="raw-editor-yaml-error"
         >

@@ -20,14 +20,14 @@ describe('DiffView', () => {
   it('applies green styling to added lines', () => {
     const diff = '+added line'
     const { container } = render(<DiffView diff={diff} />)
-    const addedLine = container.querySelector('.text-\\[\\#4caf50\\]')
+    const addedLine = container.querySelector('.text-\\[var\\(--diff-added-text\\)\\]')
     expect(addedLine).toBeInTheDocument()
   })
 
   it('applies red styling to removed lines', () => {
     const diff = '-removed line'
     const { container } = render(<DiffView diff={diff} />)
-    const removedLine = container.querySelector('.text-\\[\\#f44336\\]')
+    const removedLine = container.querySelector('.text-\\[var\\(--diff-removed-text\\)\\]')
     expect(removedLine).toBeInTheDocument()
   })
 

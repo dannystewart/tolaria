@@ -17,12 +17,12 @@ export interface CodeMirrorCallbacks {
 }
 
 function buildBaseTheme() {
-  const bg = '#ffffff'
-  const fg = '#1e1e1e'
-  const gutterBg = '#ffffff'
-  const gutterColor = '#aaa'
-  const activeLineBg = 'rgba(0,100,255,0.06)'
-  const gutterBorder = '#eee'
+  const bg = 'var(--background)'
+  const fg = 'var(--foreground)'
+  const gutterBg = 'var(--background)'
+  const gutterColor = 'var(--text-muted)'
+  const activeLineBg = 'var(--bg-hover-subtle)'
+  const gutterBorder = 'var(--border-primary)'
 
   return EditorView.theme({
     '&': {

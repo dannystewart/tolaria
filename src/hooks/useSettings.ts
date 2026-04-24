@@ -21,6 +21,7 @@ const EMPTY_SETTINGS: Settings = {
   anonymous_id: null,
   release_channel: null,
   default_ai_agent: null,
+  theme: null,
 }
 
 function normalizeSettings(settings: Settings): Settings {

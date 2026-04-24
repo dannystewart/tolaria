@@ -17,6 +17,7 @@ import {
 } from 'react'
 import { X } from '@phosphor-icons/react'
 import type { Settings } from '../types'
+import { useTheme, type ThemePreference } from '../hooks/useThemeProvider'
 import { normalizeReleaseChannel, serializeReleaseChannel, type ReleaseChannel } from '../lib/releaseChannel'
 import { trackEvent } from '../lib/telemetry'
 import { Button } from './ui/button'
@@ -43,6 +44,7 @@ interface SettingsPanelProps {
 }
 
 interface SettingsDraft {
+  theme: string
   pullInterval: number
   autoGitEnabled: boolean
   autoGitIdleThresholdSeconds: number
@@ -57,6 +59,8 @@ interface SettingsDraft {
 }
 
 interface SettingsBodyProps {
+  theme: string
+  setTheme: (value: string) => void
   pullInterval: number
   setPullInterval: (value: number) => void
   isGitVault: boolean
@@ -96,6 +100,7 @@ function createSettingsDraft(
   explicitOrganizationEnabled: boolean,
 ): SettingsDraft {
   return {
+    theme: settings.theme ?? 'system',
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
     autoGitEnabled: settings.autogit_enabled ?? false,
     autoGitIdleThresholdSeconds: sanitizePositiveInteger(
@@ -131,6 +136,7 @@ function resolveAnonymousId(settings: Settings, draft: SettingsDraft): string | 
 
 function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Settings {
   return {
+    theme: draft.theme,
     auto_pull_interval_minutes: draft.pullInterval,
     autogit_enabled: draft.autoGitEnabled,
     autogit_idle_threshold_seconds: draft.autoGitIdleThresholdSeconds,
@@ -263,6 +269,8 @@ function SettingsPanelInner({
       >
         <SettingsHeader onClose={onClose} />
         <SettingsBody
+          theme={draft.theme}
+          setTheme={(value) => updateDraft('theme', value)}
           pullInterval={draft.pullInterval}
           setPullInterval={(value) => updateDraft('pullInterval', value)}
           isGitVault={isGitVault}
@@ -315,6 +323,8 @@ function SettingsHeader({ onClose }: { onClose: () => void }) {
 }
 
 function SettingsBody({
+  theme,
+  setTheme,
   pullInterval,
   setPullInterval,
   isGitVault,
@@ -343,6 +353,10 @@ function SettingsBody({
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'auto' }}>
       <SettingsSection showDivider={false}>
+        <AppearanceSection theme={theme} setTheme={setTheme} />
+      </SettingsSection>
+
+      <SettingsSection>
         <SyncAndUpdatesSection
           pullInterval={pullInterval}
           setPullInterval={setPullInterval}
@@ -433,6 +447,33 @@ function SyncAndUpdatesSection({
           { value: 'alpha', label: 'Alpha' },
         ]}
         testId="settings-release-channel"
+      />
+    </>
+  )
+}
+
+function AppearanceSection({ theme, setTheme }: { theme: string; setTheme: (value: string) => void }) {
+  const { setTheme: applyTheme } = useTheme()
+
+  return (
+    <>
+      <SectionHeading
+        title="Appearance"
+        description="Choose how Tolaria looks. System follows your operating system preference."
+      />
+      <LabeledSelect
+        label="Theme"
+        value={theme}
+        onValueChange={(value) => {
+          setTheme(value)
+          applyTheme(value as ThemePreference)
+        }}
+        options={[
+          { value: 'light', label: 'Light' },
+          { value: 'dark', label: 'Dark' },
+          { value: 'system', label: 'System' },
+        ]}
+        testId="settings-theme"
       />
     </>
   )

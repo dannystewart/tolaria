@@ -19,6 +19,7 @@ pub struct Settings {
     pub release_channel: Option<String>,
     pub initial_h1_auto_rename_enabled: Option<bool>,
     pub default_ai_agent: Option<String>,
+    pub theme: Option<String>,
 }
 
 fn normalize_optional_string(value: Option<String>) -> Option<String> {
@@ -53,6 +54,13 @@ pub fn normalize_default_ai_agent(value: Option<&str>) -> Option<String> {
     }
 }
 
+pub fn normalize_theme(value: Option<&str>) -> Option<String> {
+    match value.map(|candidate| candidate.trim().to_ascii_lowercase()) {
+        Some(theme) if theme == "light" || theme == "dark" || theme == "system" => Some(theme),
+        _ => None,
+    }
+}
+
 fn normalize_settings(settings: Settings) -> Settings {
     Settings {
         auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
@@ -71,6 +79,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         release_channel: normalize_release_channel(settings.release_channel.as_deref()),
         initial_h1_auto_rename_enabled: settings.initial_h1_auto_rename_enabled,
         default_ai_agent: normalize_default_ai_agent(settings.default_ai_agent.as_deref()),
+        theme: normalize_theme(settings.theme.as_deref()),
     }
 }
 
@@ -166,42 +175,59 @@ pub fn set_last_vault(vault_path: &str) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    type SettingsSnapshot<'a> = (
-        Option<u32>,
-        Option<bool>,
-        Option<u32>,
-        Option<u32>,
-        Option<bool>,
-        Option<bool>,
-        Option<bool>,
-        Option<bool>,
-        Option<&'a str>,
-        Option<&'a str>,
-        Option<bool>,
-        Option<&'a str>,
-    );
+    #[derive(Debug, PartialEq)]
+    struct SettingsSnapshot<'a> {
+        auto_pull_interval_minutes: Option<u32>,
+        autogit_enabled: Option<bool>,
+        autogit_idle_threshold_seconds: Option<u32>,
+        autogit_inactive_threshold_seconds: Option<u32>,
+        auto_advance_inbox_after_organize: Option<bool>,
+        telemetry_consent: Option<bool>,
+        crash_reporting_enabled: Option<bool>,
+        analytics_enabled: Option<bool>,
+        anonymous_id: Option<&'a str>,
+        release_channel: Option<&'a str>,
+        initial_h1_auto_rename_enabled: Option<bool>,
+        default_ai_agent: Option<&'a str>,
+        theme: Option<&'a str>,
+    }
 
     fn settings_snapshot(settings: &Settings) -> SettingsSnapshot<'_> {
-        (
-            settings.auto_pull_interval_minutes,
-            settings.autogit_enabled,
-            settings.autogit_idle_threshold_seconds,
-            settings.autogit_inactive_threshold_seconds,
-            settings.auto_advance_inbox_after_organize,
-            settings.telemetry_consent,
-            settings.crash_reporting_enabled,
-            settings.analytics_enabled,
-            settings.anonymous_id.as_deref(),
-            settings.release_channel.as_deref(),
-            settings.initial_h1_auto_rename_enabled,
-            settings.default_ai_agent.as_deref(),
-        )
+        SettingsSnapshot {
+            auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
+            autogit_enabled: settings.autogit_enabled,
+            autogit_idle_threshold_seconds: settings.autogit_idle_threshold_seconds,
+            autogit_inactive_threshold_seconds: settings.autogit_inactive_threshold_seconds,
+            auto_advance_inbox_after_organize: settings.auto_advance_inbox_after_organize,
+            telemetry_consent: settings.telemetry_consent,
+            crash_reporting_enabled: settings.crash_reporting_enabled,
+            analytics_enabled: settings.analytics_enabled,
+            anonymous_id: settings.anonymous_id.as_deref(),
+            release_channel: settings.release_channel.as_deref(),
+            initial_h1_auto_rename_enabled: settings.initial_h1_auto_rename_enabled,
+            default_ai_agent: settings.default_ai_agent.as_deref(),
+            theme: settings.theme.as_deref(),
+        }
     }
 
     fn assert_empty_settings(settings: &Settings) {
         assert_eq!(
             settings_snapshot(settings),
-            (None, None, None, None, None, None, None, None, None, None, None, None)
+            SettingsSnapshot {
+                auto_pull_interval_minutes: None,
+                autogit_enabled: None,
+                autogit_idle_threshold_seconds: None,
+                autogit_inactive_threshold_seconds: None,
+                auto_advance_inbox_after_organize: None,
+                telemetry_consent: None,
+                crash_reporting_enabled: None,
+                analytics_enabled: None,
+                anonymous_id: None,
+                release_channel: None,
+                initial_h1_auto_rename_enabled: None,
+                default_ai_agent: None,
+                theme: None,
+            }
         );
     }
 
@@ -246,6 +272,7 @@ mod tests {
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
+            theme: Some("dark".to_string()),
         };
         let json = serde_json::to_string(&settings).unwrap();
         let parsed: Settings = serde_json::from_str(&json).unwrap();
@@ -271,6 +298,7 @@ mod tests {
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
+            theme: Some("system".to_string()),
             ..Default::default()
         });
         assert_eq!(loaded.auto_pull_interval_minutes, Some(10));
@@ -281,6 +309,7 @@ mod tests {
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.initial_h1_auto_rename_enabled, Some(false));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
+        assert_eq!(loaded.theme.as_deref(), Some("system"));
     }
 
     #[test]
@@ -289,11 +318,13 @@ mod tests {
             anonymous_id: Some("  test-uuid  ".to_string()),
             release_channel: Some("  alpha  ".to_string()),
             default_ai_agent: Some("  codex  ".to_string()),
+            theme: Some("  Dark  ".to_string()),
             ..Default::default()
         });
         assert_eq!(loaded.anonymous_id.as_deref(), Some("test-uuid"));
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
+        assert_eq!(loaded.theme.as_deref(), Some("dark"));
     }
 
     #[test]
@@ -385,21 +416,60 @@ mod tests {
         });
         assert_eq!(
             settings_snapshot(&loaded),
-            (
-                None,
-                None,
-                None,
-                None,
-                None,
-                Some(true),
-                Some(true),
-                Some(false),
-                Some("test-uuid-v4"),
-                None,
-                None,
-                None,
-            )
+            SettingsSnapshot {
+                auto_pull_interval_minutes: None,
+                autogit_enabled: None,
+                autogit_idle_threshold_seconds: None,
+                autogit_inactive_threshold_seconds: None,
+                auto_advance_inbox_after_organize: None,
+                telemetry_consent: Some(true),
+                crash_reporting_enabled: Some(true),
+                analytics_enabled: Some(false),
+                anonymous_id: Some("test-uuid-v4"),
+                release_channel: None,
+                initial_h1_auto_rename_enabled: None,
+                default_ai_agent: None,
+                theme: None,
+            }
         );
+    }
+
+    #[test]
+    fn test_theme_roundtrip() {
+        for theme in ["light", "dark", "system"] {
+            let loaded = save_and_reload(Settings {
+                theme: Some(theme.to_string()),
+                ..Default::default()
+            });
+            assert_eq!(loaded.theme.as_deref(), Some(theme));
+        }
+    }
+
+    #[test]
+    fn test_invalid_theme_is_filtered() {
+        let loaded = save_and_reload(Settings {
+            theme: Some("purple".to_string()),
+            ..Default::default()
+        });
+        assert!(loaded.theme.is_none());
+    }
+
+    #[test]
+    fn test_theme_normalizes_case_and_whitespace() {
+        let loaded = save_and_reload(Settings {
+            theme: Some("  Dark  ".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.theme.as_deref(), Some("dark"));
+    }
+
+    #[test]
+    fn test_old_settings_json_missing_theme_field() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, r#"{"autogit_enabled":true}"#).unwrap();
+        let loaded = get_settings_at(&path).unwrap();
+        assert!(loaded.theme.is_none());
     }
 
     #[test]

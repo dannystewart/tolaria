@@ -100,11 +100,6 @@ function DetailBlock({ label, content, isError }: {
   )
 }
 
-/** Whether this tool is a Tolaria UI-only tool (lighter styling). */
-function isUiOnlyTool(tool: string): boolean {
-  return tool === 'open_note'
-}
-
 export function AiActionCard({
   tool, label, path, status, input, output, expanded, onToggle, onOpenNote,
 }: AiActionCardProps) {
@@ -137,7 +132,7 @@ export function AiActionCard({
       className="rounded"
       style={{
         fontSize: 12,
-        background: isUiOnlyTool(tool) ? 'rgba(74, 158, 255, 0.06)' : 'rgba(74, 158, 255, 0.1)',
+        background: 'var(--accent-blue-light)',
       }}
     >
       <div
