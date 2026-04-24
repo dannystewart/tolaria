@@ -1,4 +1,5 @@
 use crate::commands::expand_tilde;
+use crate::vault::filename_rules::validate_folder_name;
 use crate::vault::{self, FolderNode, VaultEntry};
 use std::path::{Path, PathBuf};
 
@@ -114,6 +115,7 @@ pub fn create_vault_folder(vault_path: PathBuf, folder_name: PathBuf) -> Result<
     with_boundary(Some(raw_vault_path.as_ref()), |boundary| {
         let folder_name = folder_name.to_string_lossy();
         let folder_path = boundary.child_path(folder_name.as_ref())?;
+        validate_folder_name(folder_name.as_ref())?;
         ensure_missing_folder(&folder_path, folder_name.as_ref())?;
         std::fs::create_dir_all(&folder_path)
             .map_err(|e| format!("Failed to create folder: {}", e))?;
